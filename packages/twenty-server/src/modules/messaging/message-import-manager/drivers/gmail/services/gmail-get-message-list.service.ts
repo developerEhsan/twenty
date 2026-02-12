@@ -18,6 +18,7 @@ import { MESSAGING_GMAIL_USERS_MESSAGES_LIST_MAX_RESULT } from 'src/modules/mess
 import { GmailGetHistoryService } from 'src/modules/messaging/message-import-manager/drivers/gmail/services/gmail-get-history.service';
 import { GmailMessageListFetchErrorHandler } from 'src/modules/messaging/message-import-manager/drivers/gmail/services/gmail-message-list-fetch-error-handler.service';
 import { computeGmailExcludeSearchFilter } from 'src/modules/messaging/message-import-manager/drivers/gmail/utils/compute-gmail-exclude-search-filter.util';
+import { getSyncedFolderExternalIds } from 'src/modules/messaging/message-import-manager/drivers/gmail/utils/get-synced-folder-external-ids.util';
 import { type GetMessageListsArgs } from 'src/modules/messaging/message-import-manager/types/get-message-lists-args.type';
 import { type GetMessageListsResponse } from 'src/modules/messaging/message-import-manager/types/get-message-lists-response.type';
 
@@ -188,8 +189,13 @@ export class GmailGetMessageListService {
         messageChannel.syncCursor,
       );
 
+    const syncedFolderExternalIds = getSyncedFolderExternalIds(messageFolders);
+
     const { messagesAdded, messagesDeleted } =
-      await this.gmailGetHistoryService.getMessageIdsFromHistory(history);
+      this.gmailGetHistoryService.getMessageIdsFromHistory(
+        history,
+        syncedFolderExternalIds,
+      );
 
     if (!nextSyncCursor) {
       throw new MessageImportDriverException(

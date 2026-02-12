@@ -115,7 +115,7 @@ describe('GmailGetHistoryService', () => {
   });
 
   describe('getMessageIdsFromHistory', () => {
-    it('should extract message IDs', async () => {
+    it('should extract message IDs', () => {
       const history: gmail_v1.Schema$History[] = [
         {
           messagesAdded: [{ message: { id: 'add1' } }],
@@ -123,13 +123,13 @@ describe('GmailGetHistoryService', () => {
         },
       ];
 
-      const result = await service.getMessageIdsFromHistory(history);
+      const result = service.getMessageIdsFromHistory(history);
 
       expect(result.messagesAdded).toEqual(['add1']);
       expect(result.messagesDeleted).toEqual(['del1']);
     });
 
-    it('should deduplicate messages that appear in both lists', async () => {
+    it('should deduplicate messages that appear in both lists', () => {
       const history: gmail_v1.Schema$History[] = [
         {
           messagesAdded: [
@@ -140,7 +140,7 @@ describe('GmailGetHistoryService', () => {
         },
       ];
 
-      const result = await service.getMessageIdsFromHistory(history);
+      const result = service.getMessageIdsFromHistory(history);
 
       expect(result.messagesAdded).toEqual(['msg2']);
       expect(result.messagesDeleted).toEqual([]);

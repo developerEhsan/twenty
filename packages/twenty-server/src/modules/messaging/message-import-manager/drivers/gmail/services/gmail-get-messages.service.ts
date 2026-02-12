@@ -6,9 +6,13 @@ import { isDefined } from 'twenty-shared/utils';
 
 import { OAuth2ClientManagerService } from 'src/modules/connected-account/oauth2-client-manager/services/oauth2-client-manager.service';
 import { type ConnectedAccountWorkspaceEntity } from 'src/modules/connected-account/standard-objects/connected-account.workspace-entity';
-import { MessageChannelWorkspaceEntity } from 'src/modules/messaging/common/standard-objects/message-channel.workspace-entity';
+import {
+  type MessageChannelWorkspaceEntity,
+  MessageFolderImportPolicy,
+} from 'src/modules/messaging/common/standard-objects/message-channel.workspace-entity';
 import { GmailMessagesImportErrorHandler } from 'src/modules/messaging/message-import-manager/drivers/gmail/services/gmail-messages-import-error-handler.service';
-import { filterGmailMessagesByFolderPolicy } from 'src/modules/messaging/message-import-manager/drivers/gmail/utils/filter-gmail-messages-by-folder-policy.util';
+import { filterGmailMessagesBySyncedFolders } from 'src/modules/messaging/message-import-manager/drivers/gmail/utils/filter-gmail-messages-by-synced-folders.util';
+import { getSyncedFolderExternalIds } from 'src/modules/messaging/message-import-manager/drivers/gmail/utils/get-synced-folder-external-ids.util';
 import { parseAndFormatGmailMessage } from 'src/modules/messaging/message-import-manager/drivers/gmail/utils/parse-and-format-gmail-message.util';
 import { type MessageWithParticipants } from 'src/modules/messaging/message-import-manager/types/message';
 
@@ -79,11 +83,82 @@ export class GmailGetMessagesService {
       })
       .filter(isDefined);
 
-    const filteredMessages = filterGmailMessagesByFolderPolicy(
-      messages,
-      messageChannel,
+    if (
+      messageChannel.messageFolderImportPolicy ===
+      MessageFolderImportPolicy.ALL_FOLDERS
+    ) {
+      return messages;
+    }
+
+    const syncedFolderExternalIds = getSyncedFolderExternalIds(
+      messageChannel.messageFolders ?? [],
     );
 
-    return filteredMessages;
+    if (syncedFolderExternalIds.length === 0) {
+      return messages;
+    }
+
+    const trackedThreadExternalIds = await this.resolveTrackedThreadExternalIds(
+      messages,
+      syncedFolderExternalIds,
+      batchedGmailClient,
+    );
+
+    return filterGmailMessagesBySyncedFolders(
+      messages,
+      syncedFolderExternalIds,
+      trackedThreadExternalIds,
+    );
+  }
+
+  private async resolveTrackedThreadExternalIds(
+    messages: MessageWithParticipants[],
+    syncedFolderExternalIds: string[],
+    gmailClient: gmailV1.Gmail,
+  ): Promise<Set<string> | undefined> {
+    const syncedFolderSet = new Set(syncedFolderExternalIds);
+
+    const hasAnySyncedLabel = (labelIds: string[]) =>
+      labelIds.some((labelId) => syncedFolderSet.has(labelId));
+
+    const threadIdsToFetch = [
+      ...new Set(
+        messages
+          .filter(
+            (message) =>
+              message.externalId !== message.messageThreadExternalId &&
+              !hasAnySyncedLabel(message.labelIds ?? []),
+          )
+          .map((message) => message.messageThreadExternalId),
+      ),
+    ];
+
+    if (threadIdsToFetch.length === 0) {
+      return undefined;
+    }
+
+    const results = await Promise.all(
+      threadIdsToFetch.map((threadId) =>
+        gmailClient.users.threads
+          .get({ userId: 'me', id: threadId, format: 'minimal' })
+          .then((response) => ({
+            threadId,
+            messages: response.data.messages,
+          }))
+          .catch(() => ({ threadId, messages: null })),
+      ),
+    );
+
+    const trackedThreadExternalIds = new Set(
+      results
+        .filter(({ messages: threadMessages }) =>
+          threadMessages?.some((msg) => hasAnySyncedLabel(msg.labelIds ?? [])),
+        )
+        .map(({ threadId }) => threadId),
+    );
+
+    return trackedThreadExternalIds.size > 0
+      ? trackedThreadExternalIds
+      : undefined;
   }
 }

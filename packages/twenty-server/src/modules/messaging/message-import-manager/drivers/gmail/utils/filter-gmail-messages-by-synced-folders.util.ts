@@ -1,29 +1,13 @@
-import {
-  type MessageChannelWorkspaceEntity,
-  MessageFolderImportPolicy,
-} from 'src/modules/messaging/common/standard-objects/message-channel.workspace-entity';
 import { MESSAGING_GMAIL_EXCLUDED_CATEGORY_LABELS } from 'src/modules/messaging/message-import-manager/drivers/gmail/constants/messaging-gmail-excluded-category-labels.constant';
 import { MESSAGING_GMAIL_FOLDERS_WITH_CATEGORY_EXCLUSIONS } from 'src/modules/messaging/message-import-manager/drivers/gmail/constants/messaging-gmail-folders-with-category-exclusions.constant';
 import { type MessageWithParticipants } from 'src/modules/messaging/message-import-manager/types/message';
 
-export const filterGmailMessagesByFolderPolicy = (
+export const filterGmailMessagesBySyncedFolders = (
   messages: MessageWithParticipants[],
-  messageChannel: Pick<
-    MessageChannelWorkspaceEntity,
-    'messageFolders' | 'messageFolderImportPolicy'
-  >,
-): MessageWithParticipants[] => {
-  const { messageFolders, messageFolderImportPolicy } = messageChannel;
-
-  if (messageFolderImportPolicy === MessageFolderImportPolicy.ALL_FOLDERS) {
-    return messages;
-  }
-
-  const syncedFolderExternalIds = (messageFolders ?? [])
-    .filter((folder) => folder.isSynced && folder.externalId)
-    .map((folder) => folder.externalId);
-
-  return messages.filter((message) => {
+  syncedFolderExternalIds: string[],
+  trackedThreadExternalIds?: Set<string>,
+): MessageWithParticipants[] =>
+  messages.filter((message) => {
     const messageLabelIds = message.labelIds ?? [];
 
     const messageIsInAtLeastOneSyncedFolder = messageLabelIds.some((labelId) =>
@@ -31,7 +15,10 @@ export const filterGmailMessagesByFolderPolicy = (
     );
 
     if (!messageIsInAtLeastOneSyncedFolder) {
-      return false;
+      const messageIsInTrackedThread =
+        trackedThreadExternalIds?.has(message.messageThreadExternalId) ?? false;
+
+      return messageIsInTrackedThread;
     }
 
     const messageIsInSyncedCustomFolder = messageLabelIds.some(
@@ -50,4 +37,3 @@ export const filterGmailMessagesByFolderPolicy = (
 
     return !messageHasExcludedCategoryLabel;
   });
-};
