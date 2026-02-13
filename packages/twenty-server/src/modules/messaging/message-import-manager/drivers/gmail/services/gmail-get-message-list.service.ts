@@ -182,6 +182,15 @@ export class GmailGetMessageListService {
       );
     }
 
+    const syncedFolderExternalIds =
+      messageChannel.messageFolderImportPolicy ===
+      MessageFolderImportPolicy.SELECTED_FOLDERS
+        ? messageFolders
+            .filter((folder) => folder.isSynced)
+            .map((folder) => folder.externalId)
+            .filter(isNonEmptyString)
+        : [];
+
     const { history, historyId: nextSyncCursor } =
       await this.gmailGetHistoryService.getHistory(
         gmailClient,
@@ -189,7 +198,10 @@ export class GmailGetMessageListService {
       );
 
     const { messagesAdded, messagesDeleted } =
-      await this.gmailGetHistoryService.getMessageIdsFromHistory(history);
+      await this.gmailGetHistoryService.getMessageIdsFromHistory(
+        history,
+        syncedFolderExternalIds,
+      );
 
     if (!nextSyncCursor) {
       throw new MessageImportDriverException(

@@ -5,6 +5,13 @@ import { type gmail_v1 } from 'googleapis';
 import { MESSAGING_GMAIL_USERS_HISTORY_MAX_RESULT } from 'src/modules/messaging/message-import-manager/drivers/gmail/constants/messaging-gmail-users-history-max-result.constant';
 import { GmailMessageListFetchErrorHandler } from 'src/modules/messaging/message-import-manager/drivers/gmail/services/gmail-message-list-fetch-error-handler.service';
 
+const MESSAGING_GMAIL_HISTORY_EVENT_TYPES: (
+  | 'messageAdded'
+  | 'messageDeleted'
+  | 'labelAdded'
+  | 'labelRemoved'
+)[] = ['messageAdded', 'messageDeleted', 'labelAdded', 'labelRemoved'];
+
 @Injectable()
 export class GmailGetHistoryService {
   constructor(
@@ -14,8 +21,6 @@ export class GmailGetHistoryService {
   public async getHistory(
     gmailClient: gmail_v1.Gmail,
     lastSyncHistoryId: string,
-    historyTypes?: ('messageAdded' | 'messageDeleted')[],
-    labelId?: string,
   ): Promise<{
     history: gmail_v1.Schema$History[];
     historyId?: string | null;
@@ -32,8 +37,7 @@ export class GmailGetHistoryService {
           maxResults: MESSAGING_GMAIL_USERS_HISTORY_MAX_RESULT,
           pageToken,
           startHistoryId: lastSyncHistoryId,
-          historyTypes: historyTypes || ['messageAdded', 'messageDeleted'],
-          labelId,
+          historyTypes: MESSAGING_GMAIL_HISTORY_EVENT_TYPES,
         })
         .catch((error) => {
           this.gmailMessageListFetchErrorHandler.handleError(error);
@@ -62,40 +66,47 @@ export class GmailGetHistoryService {
 
   public async getMessageIdsFromHistory(
     history: gmail_v1.Schema$History[],
+    syncedFolderExternalIds: string[] = [],
   ): Promise<{
     messagesAdded: string[];
     messagesDeleted: string[];
   }> {
-    const { messagesAdded, messagesDeleted } = history.reduce(
-      (
-        acc: {
-          messagesAdded: string[];
-          messagesDeleted: string[];
-        },
-        history,
-      ) => {
-        const messagesAdded = history.messagesAdded?.map(
-          (messageAdded) => messageAdded.message?.id || '',
-        );
+    const syncedFolderExternalIdSet = new Set(syncedFolderExternalIds);
+    const messagesAdded = new Set<string>();
+    const messagesDeleted = new Set<string>();
 
-        const messagesDeleted = history.messagesDeleted?.map(
-          (messageDeleted) => messageDeleted.message?.id || '',
-        );
+    for (const historyRecord of history) {
+      historyRecord.messagesAdded?.forEach((messageAdded) => {
+        if (messageAdded.message?.id) {
+          messagesAdded.add(messageAdded.message.id);
+        }
+      });
 
-        if (messagesAdded) acc.messagesAdded.push(...messagesAdded);
-        if (messagesDeleted) acc.messagesDeleted.push(...messagesDeleted);
+      historyRecord.labelsAdded?.forEach((labelAdded) => {
+        const messageId = labelAdded.message?.id;
+        const labelIds = labelAdded.labelIds ?? [];
 
-        return acc;
-      },
-      { messagesAdded: [], messagesDeleted: [] },
+        if (
+          messageId &&
+          labelIds.some((labelId) => syncedFolderExternalIdSet.has(labelId))
+        ) {
+          messagesAdded.add(messageId);
+        }
+      });
+
+      historyRecord.messagesDeleted?.forEach((messageDeleted) => {
+        if (messageDeleted.message?.id) {
+          messagesDeleted.add(messageDeleted.message.id);
+        }
+      });
+    }
+
+    const uniqueMessagesAdded = [...messagesAdded].filter(
+      (messageId) => !messagesDeleted.has(messageId),
     );
 
-    const uniqueMessagesAdded = messagesAdded.filter(
-      (messageId) => !messagesDeleted.includes(messageId),
-    );
-
-    const uniqueMessagesDeleted = messagesDeleted.filter(
-      (messageId) => !messagesAdded.includes(messageId),
+    const uniqueMessagesDeleted = [...messagesDeleted].filter(
+      (messageId) => !messagesAdded.has(messageId),
     );
 
     return {

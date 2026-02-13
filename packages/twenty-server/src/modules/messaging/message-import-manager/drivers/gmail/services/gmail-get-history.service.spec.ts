@@ -44,6 +44,16 @@ describe('GmailGetHistoryService', () => {
 
       expect(result.historyId).toBe('200');
       expect(result.history).toHaveLength(1);
+      expect(mockClient.users.history.list).toHaveBeenCalledWith(
+        expect.objectContaining({
+          historyTypes: [
+            'messageAdded',
+            'messageDeleted',
+            'labelAdded',
+            'labelRemoved',
+          ],
+        }),
+      );
     });
 
     it('should handle pagination', async () => {
@@ -143,6 +153,46 @@ describe('GmailGetHistoryService', () => {
       const result = await service.getMessageIdsFromHistory(history);
 
       expect(result.messagesAdded).toEqual(['msg2']);
+      expect(result.messagesDeleted).toEqual([]);
+    });
+
+    it('should include messages from labelsAdded when label is synced', async () => {
+      const history: gmail_v1.Schema$History[] = [
+        {
+          labelsAdded: [
+            {
+              message: { id: 'labeled-msg' },
+              labelIds: ['Label_custom'],
+            },
+          ],
+        },
+      ];
+
+      const result = await service.getMessageIdsFromHistory(history, [
+        'Label_custom',
+      ]);
+
+      expect(result.messagesAdded).toEqual(['labeled-msg']);
+      expect(result.messagesDeleted).toEqual([]);
+    });
+
+    it('should ignore messages from labelsAdded when label is not synced', async () => {
+      const history: gmail_v1.Schema$History[] = [
+        {
+          labelsAdded: [
+            {
+              message: { id: 'labeled-msg' },
+              labelIds: ['Label_not_synced'],
+            },
+          ],
+        },
+      ];
+
+      const result = await service.getMessageIdsFromHistory(history, [
+        'Label_custom',
+      ]);
+
+      expect(result.messagesAdded).toEqual([]);
       expect(result.messagesDeleted).toEqual([]);
     });
   });
