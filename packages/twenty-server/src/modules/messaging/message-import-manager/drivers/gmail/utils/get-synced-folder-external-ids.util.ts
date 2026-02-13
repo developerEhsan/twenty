@@ -1,9 +1,14 @@
 export const getSyncedFolderExternalIds = (
   folders: { isSynced: boolean; externalId: string | null }[],
 ): string[] =>
-  folders
-    .filter(
-      (folder): folder is typeof folder & { externalId: string } =>
-        folder.isSynced && folder.externalId !== null,
-    )
-    .map((folder) => folder.externalId);
+  folders.flatMap((folder) => {
+    if (!folder.isSynced) {
+      return [];
+    }
+
+    if (folder.externalId === null || folder.externalId.length === 0) {
+      return [];
+    }
+
+    return [folder.externalId];
+  });

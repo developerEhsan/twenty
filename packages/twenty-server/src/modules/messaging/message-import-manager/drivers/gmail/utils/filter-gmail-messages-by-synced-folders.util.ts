@@ -6,24 +6,25 @@ export const filterGmailMessagesBySyncedFolders = (
   messages: MessageWithParticipants[],
   syncedFolderExternalIds: string[],
   trackedThreadExternalIds?: Set<string>,
-): MessageWithParticipants[] =>
-  messages.filter((message) => {
+): MessageWithParticipants[] => {
+  const syncedFolderExternalIdSet = new Set(syncedFolderExternalIds);
+
+  return messages.filter((message) => {
     const messageLabelIds = message.labelIds ?? [];
 
     const messageIsInAtLeastOneSyncedFolder = messageLabelIds.some((labelId) =>
-      syncedFolderExternalIds.includes(labelId),
+      syncedFolderExternalIdSet.has(labelId),
     );
 
     if (!messageIsInAtLeastOneSyncedFolder) {
-      const messageIsInTrackedThread =
-        trackedThreadExternalIds?.has(message.messageThreadExternalId) ?? false;
-
-      return messageIsInTrackedThread;
+      return (
+        trackedThreadExternalIds?.has(message.messageThreadExternalId) ?? false
+      );
     }
 
     const messageIsInSyncedCustomFolder = messageLabelIds.some(
       (labelId) =>
-        syncedFolderExternalIds.includes(labelId) &&
+        syncedFolderExternalIdSet.has(labelId) &&
         !MESSAGING_GMAIL_FOLDERS_WITH_CATEGORY_EXCLUSIONS.includes(labelId),
     );
 
@@ -37,3 +38,4 @@ export const filterGmailMessagesBySyncedFolders = (
 
     return !messageHasExcludedCategoryLabel;
   });
+};

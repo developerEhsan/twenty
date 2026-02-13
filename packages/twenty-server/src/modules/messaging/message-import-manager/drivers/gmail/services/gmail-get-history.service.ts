@@ -14,13 +14,6 @@ export class GmailGetHistoryService {
   public async getHistory(
     gmailClient: gmail_v1.Gmail,
     lastSyncHistoryId: string,
-    historyTypes?: (
-      | 'messageAdded'
-      | 'messageDeleted'
-      | 'labelAdded'
-      | 'labelRemoved'
-    )[],
-    labelId?: string,
   ): Promise<{
     history: gmail_v1.Schema$History[];
     historyId?: string | null;
@@ -37,12 +30,12 @@ export class GmailGetHistoryService {
           maxResults: MESSAGING_GMAIL_USERS_HISTORY_MAX_RESULT,
           pageToken,
           startHistoryId: lastSyncHistoryId,
-          historyTypes: historyTypes || [
-            'messageAdded',
-            'messageDeleted',
-            'labelAdded',
+          historyTypes: [
+            'messagesAdded',
+            'messagesDeleted',
+            'labelsAdded',
+            'labelsRemoved',
           ],
-          labelId,
         })
         .catch((error) => {
           this.gmailMessageListFetchErrorHandler.handleError(error);
@@ -76,44 +69,83 @@ export class GmailGetHistoryService {
     messagesAdded: string[];
     messagesDeleted: string[];
   } {
-    const syncedFolderSet = new Set(syncedFolderExternalIds);
+    const syncedFolderExternalIdSet = new Set(syncedFolderExternalIds);
+    const messagesAdded: string[] = [];
+    const messagesDeleted: string[] = [];
 
-    const messagesAdded = history.flatMap((historyEntry) => {
-      const addedIds = (historyEntry.messagesAdded ?? []).map(
-        (messageAdded) => messageAdded.message?.id || '',
-      );
+    for (const historyEntry of history) {
+      messagesAdded.push(...this.getMessageIds(historyEntry.messagesAdded));
+      messagesDeleted.push(...this.getMessageIds(historyEntry.messagesDeleted));
 
-      const labelAddedIds =
-        syncedFolderSet.size > 0
-          ? (historyEntry.labelsAdded ?? [])
-              .filter((labelEvent) =>
-                (labelEvent.labelIds ?? []).some((labelId) =>
-                  syncedFolderSet.has(labelId),
-                ),
-              )
-              .filter((labelEvent) => labelEvent.message?.id)
-              .map((labelEvent) => labelEvent.message!.id!)
-          : [];
+      if (syncedFolderExternalIdSet.size > 0) {
+        messagesAdded.push(
+          ...this.getMessageIdsFromSyncedLabelEvents(
+            historyEntry.labelsAdded,
+            syncedFolderExternalIdSet,
+          ),
+        );
+      }
+    }
 
-      return [...addedIds, ...labelAddedIds];
-    });
-
-    const messagesDeleted = history.flatMap((historyEntry) =>
-      (historyEntry.messagesDeleted ?? []).map(
-        (messageDeleted) => messageDeleted.message?.id || '',
-      ),
-    );
-
-    const deletedSet = new Set(messagesDeleted);
-    const addedSet = new Set(messagesAdded);
+    const uniqueAddedMessageIds = new Set(messagesAdded);
+    const uniqueDeletedMessageIds = new Set(messagesDeleted);
 
     return {
-      messagesAdded: messagesAdded.filter(
-        (messageId) => !deletedSet.has(messageId),
+      messagesAdded: [...uniqueAddedMessageIds].filter(
+        (messageId) => !uniqueDeletedMessageIds.has(messageId),
       ),
-      messagesDeleted: messagesDeleted.filter(
-        (messageId) => !addedSet.has(messageId),
+      messagesDeleted: [...uniqueDeletedMessageIds].filter(
+        (messageId) => !uniqueAddedMessageIds.has(messageId),
       ),
     };
+  }
+
+  private getMessageIds(
+    events:
+      | gmail_v1.Schema$HistoryMessageAdded[]
+      | gmail_v1.Schema$HistoryMessageDeleted[]
+      | null
+      | undefined,
+  ): string[] {
+    if (!events?.length) {
+      return [];
+    }
+
+    return events.flatMap((event) => {
+      const messageId = event.message?.id;
+
+      if (typeof messageId !== 'string' || messageId.length === 0) {
+        return [];
+      }
+
+      return [messageId];
+    });
+  }
+
+  private getMessageIdsFromSyncedLabelEvents(
+    labelEvents: gmail_v1.Schema$HistoryLabelAdded[] | null | undefined,
+    syncedFolderExternalIdSet: Set<string>,
+  ): string[] {
+    if (!labelEvents?.length) {
+      return [];
+    }
+
+    return labelEvents.flatMap((labelEvent) => {
+      const shouldTrackEvent = (labelEvent.labelIds ?? []).some((labelId) =>
+        syncedFolderExternalIdSet.has(labelId),
+      );
+
+      if (!shouldTrackEvent) {
+        return [];
+      }
+
+      const messageId = labelEvent.message?.id;
+
+      if (typeof messageId !== 'string' || messageId.length === 0) {
+        return [];
+      }
+
+      return [messageId];
+    });
   }
 }

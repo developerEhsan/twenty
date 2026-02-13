@@ -145,5 +145,47 @@ describe('GmailGetHistoryService', () => {
       expect(result.messagesAdded).toEqual(['msg2']);
       expect(result.messagesDeleted).toEqual([]);
     });
+
+    it('should include labelAdded messages for synced folders', () => {
+      const history: gmail_v1.Schema$History[] = [
+        {
+          labelsAdded: [
+            { labelIds: ['INBOX'], message: { id: 'msg1' } },
+            { labelIds: ['Label_work'], message: { id: 'msg2' } },
+            { labelIds: ['Label_personal'], message: { id: 'msg3' } },
+          ],
+        },
+      ];
+
+      const result = service.getMessageIdsFromHistory(history, [
+        'INBOX',
+        'Label_work',
+      ]);
+
+      expect(result.messagesAdded).toEqual(['msg1', 'msg2']);
+      expect(result.messagesDeleted).toEqual([]);
+    });
+
+    it('should ignore invalid IDs and de-duplicate repeated history IDs', () => {
+      const history: gmail_v1.Schema$History[] = [
+        {
+          messagesAdded: [{ message: { id: 'msg1' } }, { message: {} }],
+          labelsAdded: [
+            { labelIds: ['INBOX'], message: { id: 'msg1' } },
+            { labelIds: ['INBOX'], message: { id: '' } },
+          ],
+          messagesDeleted: [{ message: { id: 'msg2' } }],
+        },
+        {
+          messagesAdded: [{ message: { id: 'msg3' } }],
+          messagesDeleted: [{ message: { id: 'msg2' } }],
+        },
+      ];
+
+      const result = service.getMessageIdsFromHistory(history, ['INBOX']);
+
+      expect(result.messagesAdded).toEqual(['msg1', 'msg3']);
+      expect(result.messagesDeleted).toEqual(['msg2']);
+    });
   });
 });

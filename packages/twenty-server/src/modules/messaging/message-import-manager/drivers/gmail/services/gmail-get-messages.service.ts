@@ -95,12 +95,14 @@ export class GmailGetMessagesService {
     );
 
     if (syncedFolderExternalIds.length === 0) {
-      return messages;
+      return [];
     }
 
-    const trackedThreadExternalIds = await this.resolveTrackedThreadExternalIds(
+    const syncedFolderExternalIdSet = new Set(syncedFolderExternalIds);
+
+    const trackedThreadExternalIds = await this.getTrackedThreadExternalIds(
       messages,
-      syncedFolderExternalIds,
+      syncedFolderExternalIdSet,
       batchedGmailClient,
     );
 
@@ -111,34 +113,31 @@ export class GmailGetMessagesService {
     );
   }
 
-  private async resolveTrackedThreadExternalIds(
+  private async getTrackedThreadExternalIds(
     messages: MessageWithParticipants[],
-    syncedFolderExternalIds: string[],
+    syncedFolderExternalIdSet: Set<string>,
     gmailClient: gmailV1.Gmail,
   ): Promise<Set<string> | undefined> {
-    const syncedFolderSet = new Set(syncedFolderExternalIds);
+    const hasAnySyncedLabel = (labelIds: string[]) => {
+      return labelIds.some((labelId) => syncedFolderExternalIdSet.has(labelId));
+    };
 
-    const hasAnySyncedLabel = (labelIds: string[]) =>
-      labelIds.some((labelId) => syncedFolderSet.has(labelId));
+    const threadIdsToFetch = new Set(
+      messages
+        .filter(
+          (message) =>
+            message.externalId !== message.messageThreadExternalId &&
+            !hasAnySyncedLabel(message.labelIds ?? []),
+        )
+        .map((message) => message.messageThreadExternalId),
+    );
 
-    const threadIdsToFetch = [
-      ...new Set(
-        messages
-          .filter(
-            (message) =>
-              message.externalId !== message.messageThreadExternalId &&
-              !hasAnySyncedLabel(message.labelIds ?? []),
-          )
-          .map((message) => message.messageThreadExternalId),
-      ),
-    ];
-
-    if (threadIdsToFetch.length === 0) {
+    if (threadIdsToFetch.size === 0) {
       return undefined;
     }
 
     const results = await Promise.all(
-      threadIdsToFetch.map((threadId) =>
+      [...threadIdsToFetch].map((threadId) =>
         gmailClient.users.threads
           .get({ userId: 'me', id: threadId, format: 'minimal' })
           .then((response) => ({
