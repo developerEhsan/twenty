@@ -5,14 +5,14 @@ import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { type ClipboardEvent } from 'react';
 
-import { type BLOCK_SCHEMA } from '@/activities/blocks/constants/Schema';
-import { getSlashMenu } from '@/activities/blocks/utils/getSlashMenu';
+import { type BLOCK_SCHEMA } from '@/blocknote-editor/blocks/Schema';
+import { getSlashMenu } from '@/blocknote-editor/utils/getSlashMenu';
 import { DashboardEditorSideMenu } from '@/page-layout/widgets/standalone-rich-text/components/DashboardEditorSideMenu';
 import { DashboardFormattingToolbar } from '@/page-layout/widgets/standalone-rich-text/components/DashboardFormattingToolbar';
 import {
   CustomSlashMenu,
   type SuggestionItem,
-} from '@/ui/input/editor/components/CustomSlashMenu';
+} from '@/blocknote-editor/components/CustomSlashMenu';
 
 interface DashboardsBlockEditorProps {
   editor: typeof BLOCK_SCHEMA.BlockNoteEditor;
@@ -35,6 +35,7 @@ const StyledEditor = styled.div`
     background: transparent;
     font-size: 13px;
     color: ${({ theme }) => theme.font.color.primary};
+    user-select: text;
   }
   & .editor [class^='_inlineContent']:before {
     color: ${({ theme }) => theme.font.color.tertiary};
@@ -179,19 +180,23 @@ export const DashboardsBlockEditor = ({
         formattingToolbar={false}
         editable={!readonly}
       >
-        <DashboardFormattingToolbar boundaryElement={boundaryElement} />
-        <DashboardEditorSideMenu
-          editor={editor}
-          boundaryElement={boundaryElement}
-        />
-        <SuggestionMenuController
-          triggerCharacter="/"
-          getItems={async (query) => {
-            const items = getSlashMenu(editor);
-            return filterSuggestionItems<SuggestionItem>(items, query);
-          }}
-          suggestionMenuComponent={CustomSlashMenu}
-        />
+        {!readonly && (
+          <>
+            <DashboardFormattingToolbar boundaryElement={boundaryElement} />
+            <DashboardEditorSideMenu
+              editor={editor}
+              boundaryElement={boundaryElement}
+            />
+            <SuggestionMenuController
+              triggerCharacter="/"
+              getItems={async (query) => {
+                const items = getSlashMenu(editor);
+                return filterSuggestionItems<SuggestionItem>(items, query);
+              }}
+              suggestionMenuComponent={CustomSlashMenu}
+            />
+          </>
+        )}
       </BlockNoteView>
     </StyledEditor>
   );
