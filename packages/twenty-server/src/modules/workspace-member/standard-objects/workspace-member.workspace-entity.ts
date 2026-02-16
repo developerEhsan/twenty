@@ -6,7 +6,6 @@ import { type Relation } from 'typeorm';
 
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
 import { type FieldTypeAndNameMetadata } from 'src/engine/workspace-manager/utils/get-ts-vector-column-expression.util';
-import { type AttachmentWorkspaceEntity } from 'src/modules/attachment/standard-objects/attachment.workspace-entity';
 import { type BlocklistWorkspaceEntity } from 'src/modules/blocklist/standard-objects/blocklist.workspace-entity';
 import { type CalendarEventParticipantWorkspaceEntity } from 'src/modules/calendar/common/standard-objects/calendar-event-participant.workspace-entity';
 import { type CompanyWorkspaceEntity } from 'src/modules/company/standard-objects/company.workspace-entity';
@@ -77,7 +76,6 @@ export class WorkspaceMemberWorkspaceEntity extends BaseWorkspaceEntity {
   assignedTasks: Relation<TaskWorkspaceEntity[]>;
   favorites: Relation<FavoriteWorkspaceEntity[]>;
   accountOwnerForCompanies: Relation<CompanyWorkspaceEntity[]>;
-  authoredAttachments: Relation<AttachmentWorkspaceEntity[]>;
   connectedAccounts: Relation<ConnectedAccountWorkspaceEntity[]>;
   messageParticipants: Relation<MessageParticipantWorkspaceEntity[]>;
   blocklist: Relation<BlocklistWorkspaceEntity[]>;

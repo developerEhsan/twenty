@@ -6554,58 +6554,6 @@ export const mockedStandardObjectMetadataQueryResult: ObjectMetadataItemsQuery =
             {
               "__typename": "Field",
               "applicationId": "a8a3b890-5e13-4852-8cbf-06f91feb7415",
-              "id": "3f57b6c6-d485-440c-82ad-fb35530a0bf9",
-              "type": "RELATION",
-              "name": "author",
-              "isCustom": false,
-              "isActive": true,
-              "isSystem": true,
-              "isUIReadOnly": false,
-              "isNullable": true,
-              "isUnique": false,
-              "createdAt": "2025-06-09T18:53:47.000Z",
-              "updatedAt": "2025-06-09T18:53:47.000Z",
-              "defaultValue": null,
-              "options": null,
-              "settings": {
-                "onDelete": "SET_NULL",
-                "relationType": "MANY_TO_ONE",
-                "joinColumnName": "authorId"
-              },
-              "isLabelSyncedWithName": false,
-              "label": "Author",
-              "description": "Attachment author",
-              "icon": "IconCircleUser",
-              "relation": {
-                "__typename": "Relation",
-                "type": "MANY_TO_ONE",
-                "sourceObjectMetadata": {
-                  "__typename": "Object",
-                  "id": "a0a44046-66f1-456a-9133-1f78ac60b9ca",
-                  "nameSingular": "attachment",
-                  "namePlural": "attachments"
-                },
-                "targetObjectMetadata": {
-                  "__typename": "Object",
-                  "id": "369081b1-70a6-4fc6-9e50-f0b12841549d",
-                  "nameSingular": "workspaceMember",
-                  "namePlural": "workspaceMembers"
-                },
-                "sourceFieldMetadata": {
-                  "__typename": "Field",
-                  "id": "3f57b6c6-d485-440c-82ad-fb35530a0bf9",
-                  "name": "author"
-                },
-                "targetFieldMetadata": {
-                  "__typename": "Field",
-                  "id": "78acb16d-7732-4d6f-88f4-8de411f73f14",
-                  "name": "authoredAttachments"
-                }
-              }
-            },
-            {
-              "__typename": "Field",
-              "applicationId": "a8a3b890-5e13-4852-8cbf-06f91feb7415",
               "id": "8bca7ad2-050c-4c81-874d-afe2712a3dc5",
               "type": "RELATION",
               "name": "task",
@@ -16579,56 +16527,6 @@ export const mockedStandardObjectMetadataQueryResult: ObjectMetadataItemsQuery =
                   "__typename": "Field",
                   "id": "6811b55c-5670-42c5-bd3e-72e57f5bb701",
                   "name": "accountOwner"
-                }
-              }
-            },
-            {
-              "__typename": "Field",
-              "applicationId": "a8a3b890-5e13-4852-8cbf-06f91feb7415",
-              "id": "78acb16d-7732-4d6f-88f4-8de411f73f14",
-              "type": "RELATION",
-              "name": "authoredAttachments",
-              "isCustom": false,
-              "isActive": true,
-              "isSystem": true,
-              "isUIReadOnly": false,
-              "isNullable": true,
-              "isUnique": false,
-              "createdAt": "2025-06-09T18:53:47.000Z",
-              "updatedAt": "2025-06-09T18:53:47.000Z",
-              "defaultValue": null,
-              "options": null,
-              "settings": {
-                "relationType": "ONE_TO_MANY"
-              },
-              "isLabelSyncedWithName": false,
-              "label": "Authored attachments",
-              "description": "Attachments created by the workspace member",
-              "icon": "IconFileImport",
-              "relation": {
-                "__typename": "Relation",
-                "type": "ONE_TO_MANY",
-                "sourceObjectMetadata": {
-                  "__typename": "Object",
-                  "id": "369081b1-70a6-4fc6-9e50-f0b12841549d",
-                  "nameSingular": "workspaceMember",
-                  "namePlural": "workspaceMembers"
-                },
-                "targetObjectMetadata": {
-                  "__typename": "Object",
-                  "id": "a0a44046-66f1-456a-9133-1f78ac60b9ca",
-                  "nameSingular": "attachment",
-                  "namePlural": "attachments"
-                },
-                "sourceFieldMetadata": {
-                  "__typename": "Field",
-                  "id": "78acb16d-7732-4d6f-88f4-8de411f73f14",
-                  "name": "authoredAttachments"
-                },
-                "targetFieldMetadata": {
-                  "__typename": "Field",
-                  "id": "3f57b6c6-d485-440c-82ad-fb35530a0bf9",
-                  "name": "author"
                 }
               }
             },

@@ -326,10 +326,6 @@ export const graphqlMocks = {
                   edges: [],
                   __typename: 'MessageParticipantConnection',
                 },
-                authoredAttachments: {
-                  edges: [],
-                  __typename: 'AttachmentConnection',
-                },
                 authoredComments: {
                   edges: [],
                   __typename: 'CommentConnection',
@@ -631,10 +627,6 @@ export const graphqlMocks = {
                 messageParticipants: {
                   edges: [],
                   __typename: 'MessageParticipantConnection',
-                },
-                authoredAttachments: {
-                  edges: [],
-                  __typename: 'AttachmentConnection',
                 },
                 authoredComments: {
                   edges: [],
