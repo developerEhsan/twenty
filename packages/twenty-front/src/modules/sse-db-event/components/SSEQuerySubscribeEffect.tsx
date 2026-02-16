@@ -98,12 +98,24 @@ export const SSEQuerySubscribeEffect = () => {
 
             switch (subCode) {
               case 'EVENT_STREAM_DOES_NOT_EXIST':
-              case 'EVENT_STREAM_ALREADY_EXISTS': {
+              case 'EVENT_STREAM_ALREADY_EXISTS':
+              case 'FORBIDDEN_EXCEPTION':
+              case 'UNAUTHENTICATED': {
                 set(activeQueryListenersState, []);
                 set(shouldDestroyEventStreamState, true);
                 return;
               }
               default: {
+                // Handle forbidden/authentication errors that don't have a subCode
+                if (
+                  error.message?.includes('Forbidden') ||
+                  error.message?.includes('Unauthenticated')
+                ) {
+                  set(activeQueryListenersState, []);
+                  set(shouldDestroyEventStreamState, true);
+                  return;
+                }
+
                 throw new Error(
                   `Unhandled error for event stream: ${error.message}`,
                 );
