@@ -20,7 +20,9 @@ export const RecordTableDeactivateRecordTableRowEffect = () => {
     [deactivateRecordTableRow],
   );
 
-  useListenToSidePanelClosing(() => setTimeout(deactivateRowIfMenuClosed, 0));
+  useListenToSidePanelClosing(() => {
+    queueMicrotask(deactivateRowIfMenuClosed);
+  });
 
   return null;
 };
