@@ -94,7 +94,16 @@ export const SSEQuerySubscribeEffect = () => {
           }
         } catch (error) {
           if (error instanceof ApolloError) {
+            const code = error.graphQLErrors[0]?.extensions?.code;
             const subCode = error.graphQLErrors[0]?.extensions?.subCode;
+
+            // Handle FORBIDDEN errors by destroying the event stream
+            // This can happen when user loses access to a resource
+            if (code === 'FORBIDDEN') {
+              set(activeQueryListenersState, []);
+              set(shouldDestroyEventStreamState, true);
+              return;
+            }
 
             switch (subCode) {
               case 'EVENT_STREAM_DOES_NOT_EXIST':
