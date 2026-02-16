@@ -2170,7 +2170,7 @@ export type Mutation = {
   createCoreViewSort: CoreViewSort;
   createDatabaseConfigVariable: Scalars['Boolean'];
   createEmailingDomain: EmailingDomain;
-  /** @deprecated Use specfic file service instead */
+  /** @deprecated Use specific file service instead */
   createFile: File;
   createFrontComponent: FrontComponent;
   createManyCoreViewFieldGroups: Array<CoreViewFieldGroup>;
