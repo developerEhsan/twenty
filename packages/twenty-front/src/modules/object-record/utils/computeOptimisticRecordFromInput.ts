@@ -17,6 +17,7 @@ import { isFieldUuid } from '@/object-record/record-field/ui/types/guards/isFiel
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { buildOptimisticActorFieldValueFromCurrentWorkspaceMember } from '@/object-record/utils/buildOptimisticActorFieldValueFromCurrentWorkspaceMember';
 import { getForeignKeyNameFromRelationFieldName } from '@/object-record/utils/getForeignKeyNameFromRelationFieldName';
+import { isSystemSearchVectorField } from '@/object-record/utils/isSystemSearchVectorField';
 import { computeMorphRelationFieldName, isDefined } from 'twenty-shared/utils';
 import { FieldMetadataType, RelationType } from '~/generated-metadata/graphql';
 
@@ -38,6 +39,11 @@ export const computeOptimisticRecordFromInput = ({
 }: ComputeOptimisticCacheRecordInputArgs) => {
   const unknownRecordInputFields = Object.keys(recordInput).filter(
     (recordKey) => {
+      // Filter out system fields that should be ignored
+      if (isSystemSearchVectorField(recordKey)) {
+        return false;
+      }
+
       const correspondingFieldMetadataItem = objectMetadataItem.fields.find(
         (field) => field.name === recordKey,
       );
@@ -69,8 +75,10 @@ export const computeOptimisticRecordFromInput = ({
     },
   );
   if (unknownRecordInputFields.length > 0) {
-    throw new Error(
-      `Should never occur, encountered unknown fields ${unknownRecordInputFields.join(', ')} in objectMetadataItem ${objectMetadataItem.nameSingular}`,
+    // Log warning instead of throwing error to handle cases where backend
+    // adds fields before frontend metadata is updated (e.g., updatedBy field)
+    console.warn(
+      `Encountered unknown fields ${unknownRecordInputFields.join(', ')} in objectMetadataItem ${objectMetadataItem.nameSingular}. These fields will be skipped.`,
     );
   }
 
