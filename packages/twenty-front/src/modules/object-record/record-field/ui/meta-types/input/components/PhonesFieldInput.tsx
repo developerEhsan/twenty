@@ -173,13 +173,18 @@ export const PhonesFieldInput = () => {
           };
         }
 
-        const phone = parsePhoneNumber(input);
-        if (phone !== undefined) {
-          return {
-            number: phone.nationalNumber,
-            callingCode: `+${phone.countryCallingCode}`,
-            countryCode: phone.country as string,
-          };
+        try {
+          const phone = parsePhoneNumber(input);
+          if (phone !== undefined) {
+            return {
+              number: phone.nationalNumber,
+              callingCode: `+${phone.countryCallingCode}`,
+              countryCode: phone.country as string,
+            };
+          }
+        } catch (error) {
+          // parsePhoneNumber can throw errors for invalid country codes or malformed input
+          // Return empty values to allow the validation to catch it
         }
 
         return {
