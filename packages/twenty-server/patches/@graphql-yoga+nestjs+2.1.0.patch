@@ -412,8 +412,8 @@ index ce142f6..95a1faf 100644
      const yoga = createYoga<YogaDriverServerContext<'express'>>({
        ...options,
 +      schema: async request => {
-+        const workspaceId = request.req.workspace.id
-+        const workspaceCacheVersion = request.req.workspaceMetadataVersion
++        const workspaceId = request.req.workspace?.id ?? 'anonymous'
++        const workspaceCacheVersion = request.req.workspaceMetadataVersion ?? '0'
 +        const url = request.req.baseUrl
 +        const applicationId = request.req.application?.id ?? 'all'
 +
@@ -473,8 +473,8 @@ index ce142f6..95a1faf 100644
      const yoga = createYoga<YogaDriverServerContext<'fastify'>>({
        ...options,
 +      schema: async request => {
-+        const workspaceId = request.req.workspace.id
-+        const workspaceCacheVersion = request.req.workspaceMetadataVersion
++        const workspaceId = request.req.workspace?.id ?? 'anonymous'
++        const workspaceCacheVersion = request.req.workspaceMetadataVersion ?? '0'
 +        const url = request.req.baseUrl
 +        const applicationId = request.req.application?.id ?? 'all'
 +
