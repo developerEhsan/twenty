@@ -41,7 +41,15 @@ export class RestApiService {
         },
       });
     } catch (err) {
-      throw new RestApiException(err.response.data.errors);
+      if (err.response?.data?.errors) {
+        throw new RestApiException(err.response.data.errors);
+      }
+      throw new RestApiException([
+        {
+          message: err.message || 'Failed to connect to GraphQL API',
+          extensions: { code: 'INTERNAL_SERVER_ERROR' },
+        },
+      ]);
     }
 
     if (response.data.errors?.length) {
